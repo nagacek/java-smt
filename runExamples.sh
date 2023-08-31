@@ -85,7 +85,7 @@ done
 # Run Examples for Java-SMT.
 # PerfDisableSharedMem avoids hsperfdata in /tmp (disable it to connect easily with VisualConsole and Co.).
 
-for EXAMPLE in AllSatExample HoudiniApp Interpolation OptimizationFormulaWeights OptimizationIntReal SolverOverviewTable; do
+for EXAMPLE in AllSatExample HoudiniApp Interpolation OptimizationFormulaWeights OptimizationIntReal SolverOverviewTable theory_solving.TheorySolving; do
   tput setaf 2 # set green color
   echo ""
   echo "####################################################"

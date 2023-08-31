@@ -16,6 +16,7 @@ import org.sosy_lab.common.io.PathCounterTemplate;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+import org.sosy_lab.java_smt.api.BooleanTheorySolver;
 
 class Z3TheoremProver extends Z3AbstractProver<Void> implements ProverEnvironment {
 
@@ -34,5 +35,12 @@ class Z3TheoremProver extends Z3AbstractProver<Void> implements ProverEnvironmen
   public Void addConstraint(BooleanFormula f) throws InterruptedException {
     super.addConstraint0(f);
     return null;
+  }
+
+  @Override
+  public boolean registerTheorySolver(BooleanTheorySolver prop) {
+    Z3UserPropagator internalProp = new Z3UserPropagator(z3solver, z3context, creator, mgr, prop);
+    prop.injectBackend(internalProp);
+    return true;
   }
 }

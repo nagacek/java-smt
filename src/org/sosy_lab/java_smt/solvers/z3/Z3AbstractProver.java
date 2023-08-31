@@ -43,7 +43,7 @@ abstract class Z3AbstractProver<T> extends AbstractProverWithAllSat<T> {
 
   protected final Z3FormulaCreator creator;
   protected final long z3context;
-  private final Z3FormulaManager mgr;
+  protected final Z3FormulaManager mgr;
 
   protected final long z3solver;
 

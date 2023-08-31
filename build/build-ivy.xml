@@ -65,7 +65,7 @@ SPDX-License-Identifier: Apache-2.0
     <!-- Ask Ivy to get all the dependencies for us -->
     <target name="resolve-dependencies" depends="load-ivy, update-contrib" unless="ivy.disable">
         <echo message="Downloading and installing dependencies with Ivy..."/>
-        <ivy:resolve conf="${ivy.configurations}" log="download-only"/>
+        <ivy:resolve conf="${ivy.configurations}" log="debug"/>
         <ivy:retrieve sync="true" overwriteMode="different" pattern="${ivy.lib.dir}/[conf]/[artifact](-[classifier]).[ext]"/>
     </target>
 

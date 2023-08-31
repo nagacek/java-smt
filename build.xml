@@ -13,7 +13,6 @@ SPDX-License-Identifier: Apache-2.0
     <!-- Include a file in which all properties can be overridden.
          This file won't get checked in and can be used to change properties
          locally for one machine if necessary. -->
-    <property file="build.properties"/>
     <property environment="env"/>
 
     <!-- Yices2 is under GPL3 and has to be seperated from Apache2-licensed software. -->
