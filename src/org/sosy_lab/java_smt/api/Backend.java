@@ -22,19 +22,19 @@ package org.sosy_lab.java_smt.api;
 
 public interface Backend {
 
-  void addExpressionToWatch(Formula toAdd);
+  void addExpressionToWatch(BooleanFormula toAdd);
 
-  void addConflict(Formula[] fixed);
+  void addConflict(BooleanFormula[] fixed);
 
   void addConflictEq(
-      Formula[] fixed, Formula[] lhs,
-      Formula[] rhs);
+      BooleanFormula[] fixed, BooleanFormula[] lhs,
+      BooleanFormula[] rhs);
 
-  void addTheoryLemma(Formula[] fixed, Formula conflict);
+  void addTheoryLemma(BooleanFormula[] fixed, BooleanFormula conflict);
 
   void addLearningClause(
-      Formula[] fixed, Formula[] lhs,
-      Formula[] rhs, Formula constraint);
+      BooleanFormula[] fixed, BooleanFormula[] lhs,
+      BooleanFormula[] rhs, BooleanFormula constraint);
 
   void notifyOnUserFunction();
   void notifyOnVarAssign();

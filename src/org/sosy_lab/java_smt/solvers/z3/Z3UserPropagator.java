@@ -86,15 +86,15 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
     this.manager = manager;
   }
   @Override
-  public void addExpressionToWatch(Formula toWatch) {
+  public void addExpressionToWatch(BooleanFormula toWatch) {
     Native.propagateAdd(this, ctx, solver, javainfo, creator.extractInfo(toWatch));
   }
 
   @Override
   public void addConflict(
-      Formula[] fixed) {
-    Formula conflict = manager.getBooleanFormulaManager().makeFalse();
-    Formula[] empty = new BooleanFormula[0];
+      BooleanFormula[] fixed) {
+    BooleanFormula conflict = manager.getBooleanFormulaManager().makeFalse();
+    BooleanFormula[] empty = new BooleanFormula[0];
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(empty), formulaArrayToLong(empty),
         creator.extractInfo(conflict));
@@ -102,8 +102,8 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
 
   @Override
   public void addConflictEq(
-      Formula[] fixed, Formula[] lhs,
-      Formula[] rhs) {
+      BooleanFormula[] fixed, BooleanFormula[] lhs,
+      BooleanFormula[] rhs) {
     BooleanFormula conflict = manager.getBooleanFormulaManager().makeFalse();
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , lhs.length, formulaArrayToLong(lhs), formulaArrayToLong(rhs),
@@ -111,19 +111,19 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
   }
 
   @Override
-  public void addTheoryLemma(Formula[] fixed, Formula conflict) {
-    Formula[] empty = new BooleanFormula[0];
+  public void addTheoryLemma(BooleanFormula[] fixed, BooleanFormula conflict) {
+    BooleanFormula[] empty = new BooleanFormula[0];
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(empty), formulaArrayToLong(empty), creator.extractInfo(conflict));
   }
 
   @Override
-  public void addLearningClause(Formula[] fixed, Formula[] lhs,
-                                Formula[] rhs, Formula constraint) {
+  public void addLearningClause(BooleanFormula[] fixed, BooleanFormula[] lhs,
+                                BooleanFormula[] rhs, BooleanFormula constraint) {
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(lhs), formulaArrayToLong(rhs), creator.extractInfo(constraint));
   }
-  private long[] formulaArrayToLong(Formula[] formulaArray) {
+  private long[] formulaArrayToLong(BooleanFormula[] formulaArray) {
     if (formulaArray == null)
           return new long[0];
     long[] formulaInfos = new long[formulaArray.length];

@@ -342,4 +342,31 @@ public class NQueens {
   }
 
 
+  public int solveObservantPartial(ProverEnvironment prover) throws InterruptedException,
+                                                                     SolverException {
+    BooleanFormula[][] symbols = getSymbols();
+    addConstraints(prover, symbols);
+    this.theorySolver = new PartialObservantPropagator(bmgr);
+    prover.registerTheorySolver(theorySolver);
+    for (BooleanFormula[] symbolRow : symbols) {
+      for (BooleanFormula singleSymbol : symbolRow) {
+        theorySolver.addExpressionToWatch(singleSymbol);
+      }
+    }
+    theorySolver.notifyOnVarAssign();
+    theorySolver.notifyOnFullAssign();
+
+    // solve without theory solver
+    int num = 0;
+    while (!prover.isUnsat()) {
+      var assignments = prover.getModelAssignments();
+      BooleanFormula modelFormula = bmgr.makeTrue();
+      for (var assgn : assignments) {
+        modelFormula = bmgr.and(modelFormula, assgn.getAssignmentAsFormula());
+      }
+      prover.push(bmgr.not(modelFormula));
+      num++;
+    }
+    return num;
+  }
 }

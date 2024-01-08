@@ -47,11 +47,12 @@ public class StatMaker {
     csv.close();
     csv = new FileWriter(args[0] + ".csv", true);
     csv.write("number,partial-minimal,partial,complete,classic\n");
+    //csv.write("n,num,classic,num,obsv\n");
     csv.close();
 
     long starttime = 0;
     long endtime = 0;
-    for (int i = 4; i <= Integer.parseInt(args[1]); i++) {
+    for (int i = Integer.parseInt(args[1]); i <= Integer.parseInt(args[2]); i++) {
       csv = new FileWriter(args[0] + ".csv", true);
       csv.write(i + ",");
 
@@ -94,9 +95,20 @@ public class StatMaker {
            ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS,
                ProverOptions.GENERATE_ALL_SAT)) {
         NQueens myQueen = new NQueens(context, i);
-        myQueen.solveClassic(prover);
+        csv.write(myQueen.solveClassic(prover) + ",");
       }
       endtime = System.nanoTime();
+      /*csv.write( (endtime - starttime)/1000000 + ",");
+
+      starttime = System.nanoTime();
+      try (SolverContext context =
+               SolverContextFactory.createSolverContext(config, logger, notifier, Solvers.Z3);
+           ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS,
+               ProverOptions.GENERATE_ALL_SAT)) {
+        NQueens myQueen = new NQueens(context, i);
+        csv.write(myQueen.solveObservantPartial(prover) + ",");
+      }
+      endtime = System.nanoTime();*/
       csv.write( (endtime - starttime)/1000000 + "\n");
       csv.close();
     }
