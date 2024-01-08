@@ -54,7 +54,7 @@ public abstract class BooleanTheorySolver {
     backend.addConflict(fixed);
   }
   public final void addConflictEq(BooleanFormula[] fixed, BooleanFormula[] lhs,
-                                 BooleanFormula[] rhs) {
+                                  BooleanFormula[] rhs) {
     backend.addConflictEq(fixed, lhs, rhs);
   }
 
@@ -63,7 +63,7 @@ public abstract class BooleanTheorySolver {
   }
 
   public final void addLearningClause(BooleanFormula[] fixed, BooleanFormula[] lhs,
-        BooleanFormula[] rhs, BooleanFormula constraint) {
+                                      BooleanFormula[] rhs, BooleanFormula constraint) {
     backend.addLearningClause(fixed, lhs, rhs, constraint);
   }
 

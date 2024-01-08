@@ -22,6 +22,9 @@ lib/native/source/*/*.so
 lib/native/source/*/*.o
 lib/native/*/*.asc
 
+*.class
+*.log
+
 doc/Example-Maven-Project/target*
 doc/Example-Maven-Web-Project/target*
 doc/Example-Gradle-Project/.gradle

@@ -33,6 +33,7 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanTheorySolver;
+import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
@@ -59,7 +60,9 @@ public class TheorySolving {
         var sat = example.solve(logger);
         logger.log(Level.INFO, "Result is " + sat);
         if (sat) {
-          logger.log(Level.INFO, prover.getModel().asList());
+          Model m = prover.getModel();
+          logger.log(Level.INFO, m.asList());
+          m.close();
         }
     }
     catch (InvalidConfigurationException | UnsatisfiedLinkError e) {
@@ -73,12 +76,15 @@ public class TheorySolving {
   private boolean solve(LogManager logger) throws InterruptedException, SolverException {
     bfmgr = context.getFormulaManager().getBooleanFormulaManager();
     BooleanFormula p = bfmgr.makeVariable("p");
-    prover.addConstraint(p);
+    BooleanFormula q = bfmgr.makeVariable("q");
+    BooleanFormula p_v_q = bfmgr.or(p, q);
+    prover.addConstraint(p_v_q);
 
-    BooleanTheorySolver theory = new InfoTheorySolver(logger, bfmgr);
+    BooleanTheorySolver theory = new InfoTheorySolver(logger, bfmgr, q);
     verify(prover.registerTheorySolver(theory));
 
     theory.addExpressionToWatch(p);
+    theory.addExpressionToWatch(q);
     theory.notifyOnVarAssign();
     theory.notifyOnEquality();
     theory.notifyOnFullAssign();

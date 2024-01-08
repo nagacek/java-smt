@@ -25,14 +25,17 @@ import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.BooleanTheorySolver;
+import org.sosy_lab.java_smt.api.Formula;
 
 public class InfoTheorySolver extends BooleanTheorySolver {
   LogManager logger;
   BooleanFormulaManager manager;
+  BooleanFormula q;
 
-  public InfoTheorySolver(LogManager logger, BooleanFormulaManager manager) {
+  public InfoTheorySolver(LogManager logger, BooleanFormulaManager manager, BooleanFormula q) {
     this.logger = logger;
     this.manager = manager;
+    this.q = q;
   }
 
   @Override
@@ -52,7 +55,7 @@ public class InfoTheorySolver extends BooleanTheorySolver {
 
   @Override
   public void equality(BooleanFormula x, BooleanFormula y) {
-    logger.log(Level.INFO, "Formulas " + x + " and " + y+ " are equal from"
+    logger.log(Level.INFO, "Formulas " + x + " and " + y + " are equal from"
         + " now on");
   }
 
@@ -64,11 +67,19 @@ public class InfoTheorySolver extends BooleanTheorySolver {
   @Override
   public void fixed(BooleanFormula var, BooleanFormula val) {
     logger.log(Level.INFO, "Formula " + var + " is set to be " + val);
-    if (val.equals(manager.makeTrue())) {
-      logger.log(Level.INFO, "Creating conflict on formula " + var);
+    if (val.equals(manager.makeTrue()) && var.equals(q)) {
+      logger.log(Level.INFO, "-> Creating conflict on formula " + var);
       BooleanFormula[] fixed = new BooleanFormula[1];
       fixed[0] = var;
       addConflict(fixed);
     }
+  }
+
+  private Formula[] reverse (BooleanFormula[] eq) {
+    BooleanFormula[] ret_val = new BooleanFormula[eq.length];
+    for (int i = 0; i < eq.length; i++) {
+      ret_val[i] = eq[eq.length - i - 1];
+    }
+    return ret_val;
   }
 }

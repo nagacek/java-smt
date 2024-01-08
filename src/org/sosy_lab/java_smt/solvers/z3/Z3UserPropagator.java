@@ -68,7 +68,8 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
 
   @Override
   public void fixedWrapper(long lvar, long lvalue) {
-    theorySolver.fixed(creator.encapsulateBoolean(lvar), creator.encapsulateBoolean(lvalue));
+    theorySolver.fixed(creator.encapsulateBoolean(lvar),
+        creator.encapsulateBoolean(lvalue));
   }
 
   public void decideWrapper(long expr, int i, int j) {}
@@ -84,17 +85,16 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
     this.theorySolver = theorySolver;
     this.manager = manager;
   }
-
   @Override
-  public void addExpressionToWatch(BooleanFormula toWatch) {
+  public void addExpressionToWatch(Formula toWatch) {
     Native.propagateAdd(this, ctx, solver, javainfo, creator.extractInfo(toWatch));
   }
 
   @Override
   public void addConflict(
-      BooleanFormula[] fixed) {
-    BooleanFormula conflict = manager.getBooleanFormulaManager().makeFalse();
-    BooleanFormula[] empty = new BooleanFormula[0];
+      Formula[] fixed) {
+    Formula conflict = manager.getBooleanFormulaManager().makeFalse();
+    Formula[] empty = new BooleanFormula[0];
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(empty), formulaArrayToLong(empty),
         creator.extractInfo(conflict));
@@ -102,8 +102,8 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
 
   @Override
   public void addConflictEq(
-      BooleanFormula[] fixed, BooleanFormula[] lhs,
-      BooleanFormula[] rhs) {
+      Formula[] fixed, Formula[] lhs,
+      Formula[] rhs) {
     BooleanFormula conflict = manager.getBooleanFormulaManager().makeFalse();
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , lhs.length, formulaArrayToLong(lhs), formulaArrayToLong(rhs),
@@ -111,15 +111,15 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
   }
 
   @Override
-  public void addTheoryLemma(BooleanFormula[] fixed, BooleanFormula conflict) {
-    BooleanFormula[] empty = new BooleanFormula[0];
+  public void addTheoryLemma(Formula[] fixed, Formula conflict) {
+    Formula[] empty = new BooleanFormula[0];
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(empty), formulaArrayToLong(empty), creator.extractInfo(conflict));
   }
 
   @Override
-  public void addLearningClause(BooleanFormula[] fixed, BooleanFormula[] lhs,
-                                BooleanFormula[] rhs, BooleanFormula constraint) {
+  public void addLearningClause(Formula[] fixed, Formula[] lhs,
+                                Formula[] rhs, Formula constraint) {
     Native.propagateConflict(this, ctx, solver, javainfo, fixed.length, formulaArrayToLong(fixed)
         , 0, formulaArrayToLong(lhs), formulaArrayToLong(rhs), creator.extractInfo(constraint));
   }
@@ -145,6 +145,4 @@ public final class Z3UserPropagator extends Native.UserPropagatorBase implements
 
   @Override
   public void notifyOnFullAssign() { registerFinal(); }
-
-  // communication with
 }

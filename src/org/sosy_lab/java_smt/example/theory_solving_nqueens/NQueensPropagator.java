@@ -18,26 +18,22 @@
  *  limitations under the License.
  */
 
-package org.sosy_lab.java_smt.api;
+package org.sosy_lab.java_smt.example.theory_solving_nqueens;
 
-public interface Backend {
+import org.sosy_lab.java_smt.api.BooleanTheorySolver;
 
-  void addExpressionToWatch(Formula toAdd);
+public abstract class NQueensPropagator extends BooleanTheorySolver {
+  private int solutionNumber;
 
-  void addConflict(Formula[] fixed);
+  protected void initNum() {
+    solutionNumber = 0;
+  }
 
-  void addConflictEq(
-      Formula[] fixed, Formula[] lhs,
-      Formula[] rhs);
+  protected void incrementNum() {
+    solutionNumber++;
+  }
 
-  void addTheoryLemma(Formula[] fixed, Formula conflict);
-
-  void addLearningClause(
-      Formula[] fixed, Formula[] lhs,
-      Formula[] rhs, Formula constraint);
-
-  void notifyOnUserFunction();
-  void notifyOnVarAssign();
-  void notifyOnEquality();
-  void notifyOnFullAssign();
+  public int getSolutionNumber() {
+    return solutionNumber;
+  }
 }
