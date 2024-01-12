@@ -30,29 +30,28 @@ import org.sosy_lab.java_smt.api.UserPropagator;
 final class Z3UserPropagator extends Native.UserPropagatorBase implements PropagatorBackend {
   private final Z3FormulaCreator creator;
   private final Z3FormulaManager manager;
-  private final UserPropagator theorySolver;
-
+  private final UserPropagator userPropagator;
 
   // function calls from z3's side
-  // (forwarding callbacks to the theory solver)
+  // (forwarding callbacks to the user propagator)
   @Override
   public void pushWrapper() {
-    theorySolver.onPush();
+    userPropagator.onPush();
   }
 
   @Override
   public void popWrapper(int num) {
-    theorySolver.onPop(num);
+    userPropagator.onPop(num);
   }
 
   @Override
   public void finWrapper() {
-    theorySolver.onFinalCheck();
+    userPropagator.onFinalCheck();
   }
 
   @Override
   public void eqWrapper(long lx, long ly) {
-    theorySolver.onEquality(creator.encapsulateBoolean(lx), creator.encapsulateBoolean(ly));
+    userPropagator.onEquality(creator.encapsulateBoolean(lx), creator.encapsulateBoolean(ly));
   }
 
   // to function correctly, new prop and context are needed
@@ -64,26 +63,25 @@ final class Z3UserPropagator extends Native.UserPropagatorBase implements Propag
 
   @Override
   public void createdWrapper(long le) {
-    //theorySolver.created(creator.encapsulateBoolean(le));
   }
 
   @Override
   public void fixedWrapper(long lvar, long lvalue) {
-    theorySolver.onKnownValue(creator.encapsulateBoolean(lvar),
+    userPropagator.onKnownValue(creator.encapsulateBoolean(lvar),
         creator.encapsulateBoolean(lvalue));
   }
 
   public void decideWrapper(long expr, int i, int j) {}
 
 
-  // function calls from java-smt's side (mostly calls to SMTBackend)
+  // function calls from java-smt's side (mostly calls to the smt backend)
   // (register events on z3's side)
 
   Z3UserPropagator(long ctx, long solver, Z3FormulaCreator creator, Z3FormulaManager manager,
-                          UserPropagator theorySolver) {
+                          UserPropagator userPropagator) {
     super(ctx, solver);
     this.creator = creator;
-    this.theorySolver = theorySolver;
+    this.userPropagator = userPropagator;
     this.manager = manager;
   }
 
@@ -125,9 +123,6 @@ final class Z3UserPropagator extends Native.UserPropagatorBase implements Propag
     }
     return formulaInfos;
   }
-
-  //@Override
-  //public void notifyOnUserFunction() { registerCreated(); }
 
   @Override
   public void notifyOnKnownValue() { registerFixed(); }
