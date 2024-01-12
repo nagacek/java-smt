@@ -18,19 +18,24 @@
  *  limitations under the License.
  */
 
-package org.sosy_lab.java_smt.example.theory_solving_nqueens;
+package org.sosy_lab.java_smt.example.nqueens_user_propagator;
 
 import io.github.cvc5.Pair;
 import java.util.HashMap;
-import java.util.Objects;
+
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
-public class PartialPropagator extends CompletePropagator{
+/**
+ * In addition to the enumeration done by {@link NQueensEnumeratingPropagator},
+ * this propagator also enforces the queen placement constraints without explicit encoding.
+ */
+public class NQueensConstraintPropagator extends NQueensEnumeratingPropagator {
   private final BooleanFormula[][] symbols;
   private final HashMap<BooleanFormula, Pair<Integer, Integer>> symbolToCoordinates;
   private final BooleanFormulaManager bmgr;
-  public PartialPropagator(BooleanFormula[][] symbols, BooleanFormulaManager bmgr) {
+
+  public NQueensConstraintPropagator(BooleanFormula[][] symbols, BooleanFormulaManager bmgr) {
     super();
     this.symbols = symbols;
     this.bmgr = bmgr;
@@ -40,7 +45,7 @@ public class PartialPropagator extends CompletePropagator{
 
   private void fillCoordinateMap() {
     for (int i = 0; i < symbols[0].length; i++) {
-      for (int j = 0; j < symbols[0].length; j++) {
+      for (int j = 0; j < symbols[i].length; j++) {
         symbolToCoordinates.put(symbols[i][j], new Pair<>(i, j));
       }
     }
@@ -49,27 +54,27 @@ public class PartialPropagator extends CompletePropagator{
   @Override
   public void onKnownValue(BooleanFormula var, BooleanFormula value) {
     if (bmgr.isTrue(value)) {
+      // Check if the placed queen conflicts with another queen
       Pair<Integer, Integer> coordinates = symbolToCoordinates.get(var);
-      for (BooleanFormula other : fixedValues) {
+      for (BooleanFormula other : fixedVariables) {
         BooleanFormula otherValue = currentModel.get(other);
         if (bmgr.isTrue(otherValue)) {
           Pair<Integer, Integer> otherCoordinates = symbolToCoordinates.get(other);
-          if (Objects.equals(coordinates.first, otherCoordinates.first) || Objects.equals(
-              coordinates.second, otherCoordinates.second)) {
-            backend.propagateConflict(new BooleanFormula[]{var, other});
-            continue;
-          }
-          int diffx = Math.abs(coordinates.first - otherCoordinates.first);
-          int diffy = Math.abs(coordinates.second - otherCoordinates.second);
-          if (diffx == diffy) {
-            backend.propagateConflict(new BooleanFormula[]{var, other});
+
+          int x1 = coordinates.first;
+          int y1 = coordinates.second;
+          int x2 = otherCoordinates.first;
+          int y2 = otherCoordinates.second;
+          if (x1 == x2 || y1 == y2 || Math.abs(x1 - x2) == Math.abs(y1 - y2)) {
+            // We have two queens on the same row, same column, or same diagonal.
+            // This is not allowed, so we raise a conflict.
+            backend.propagateConflict(new BooleanFormula[] { var, other });
           }
         }
       }
     }
 
-    fixedValues.add(var);
-    currentModel.put(var, value);
+    super.onKnownValue(var, value);
   }
 
 }

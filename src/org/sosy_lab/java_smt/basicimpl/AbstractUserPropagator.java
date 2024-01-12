@@ -28,11 +28,26 @@ import org.sosy_lab.java_smt.api.PropagatorBackend;
 
 public abstract class AbstractUserPropagator implements UserPropagator  {
 
-  protected @Nullable PropagatorBackend backend = null;
+  protected @Nullable PropagatorBackend backend;
+
+  @Override
+  public void onFinalCheck() {
+
+  }
+
+  @Override
+  public void onEquality(BooleanFormula x, BooleanFormula y) {
+
+  }
+
+  @Override
+  public void onKnownValue(BooleanFormula expr, BooleanFormula val) {
+
+  }
 
   @Override
   public final void injectBackend(PropagatorBackend backend) {
-    this.backend = backend;
+    this.backend = Preconditions.checkNotNull(backend);
   }
 
   @Override

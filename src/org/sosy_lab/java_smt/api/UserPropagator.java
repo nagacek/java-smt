@@ -41,7 +41,7 @@ public interface UserPropagator {
 
   /**
    * This callback is invoked when the solver backtracks. The solver can backtrack multiple
-   * level simultaneously.
+   * levels simultaneously.
    * @param numPoppedLevels The number of levels to backtrack (~ number of pushes to backtrack).
    */
   void onPop(int numPoppedLevels);

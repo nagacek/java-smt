@@ -6,8 +6,9 @@
 //
 // SPDX-License-Identifier: Unlicense OR Apache-2.0 OR MIT
 
-package org.sosy_lab.java_smt.example.theory_solving_nqueens;
+package org.sosy_lab.java_smt.example.nqueens_user_propagator;
 
+import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ public class NQueens {
   private final SolverContext context;
   private final BooleanFormulaManager bmgr;
   private final int n;
-  private NQueensPropagator theorySolver;
+  private NQueensEnumeratingPropagator theorySolver;
 
   public NQueens(SolverContext pContext, int n) {
     context = pContext;
@@ -62,27 +63,26 @@ public class NQueens {
          ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS,
              ProverOptions.GENERATE_ALL_SAT)) {
       int n = Integer.parseInt(args[0]);
-      NQueens myQueen = new NQueens(context, n);
-
       int method = Integer.parseInt(args[1]);
-      int solutions = -1;
-      if (method == 1) {
-        solutions = myQueen.solveComplete(prover);
-      } else if (method == 2) {
-        solutions = myQueen.solvePartialMin(prover);
-      } else if (method == 3) {
-        solutions = myQueen.solvePartial(prover);
-      } else {
-        solutions = myQueen.solveClassic(prover);
-      }
 
-      if (solutions == 0) {
-        System.out.println("No solutions found.");
-      } else if (solutions > 0){
-        System.out.println("Solutions: " + solutions);
+      long timeSnapshot = System.currentTimeMillis();
+      NQueens myQueen = new NQueens(context, n);
+      int solutions;
+      if (method == 1) {
+        System.out.println("Enumerating Nqueens solutions with classical blocking clauses.");
+        solutions = myQueen.enumerateSolutionsClassic(prover);
+      } else if (method == 2) {
+        System.out.println("Enumerating Nqueens solutions with enumerating propagator.");
+        solutions = myQueen.enumerateSolutionsWithPropagator(prover);
+      } else if (method == 3) {
+        System.out.println("Enumerating Nqueens solutions with enumerating and constraining propagator.");
+        solutions = myQueen.enumerateSolutionsWithConstraintPropagator(prover);
       } else {
-        System.out.println("Something went wrong :(");
+        throw new IllegalArgumentException("The second method argument must be in {1, 2, 3}.");
       }
+      long passedMillis = System.currentTimeMillis() - timeSnapshot;
+      System.out.printf("Found %d solutions in %.2f seconds%n", solutions, (passedMillis / 1000d));
+
     } catch (InvalidConfigurationException | UnsatisfiedLinkError e) {
       logger.logUserException(Level.INFO, e, "Solver Z3 is not available.");
     } catch (UnsupportedOperationException e) {
@@ -270,97 +270,96 @@ public class NQueens {
 
   private void addConstraints(ProverEnvironment prover, BooleanFormula[][] symbols) throws InterruptedException, SolverException{
     List<BooleanFormula> rules =
-        ImmutableList.<BooleanFormula>builder()
-            .addAll(rowRule1(symbols))
-            .addAll(rowRule2(symbols))
-            .addAll(columnRule(symbols))
-            .addAll(diagonalRule(symbols))
-            .build();
-    prover.push(bmgr.and(rules));
+            ImmutableList.<BooleanFormula>builder()
+                    .addAll(rowRule1(symbols))
+                    .addAll(rowRule2(symbols))
+                    .addAll(columnRule(symbols))
+                    .addAll(diagonalRule(symbols))
+                    .build();
+    prover.addConstraint(bmgr.and(rules));
   }
 
-  private int solveWithTheory(
-      NQueensPropagator theorySolver, ProverEnvironment prover,
-      BooleanFormula[][] symbols) throws InterruptedException,
-                                                                 SolverException {
-    this.theorySolver = theorySolver;
-    prover.registerUserPropagator(theorySolver);
-    for (BooleanFormula[] symbolRow : symbols) {
-      for (BooleanFormula singleSymbol : symbolRow) {
-        theorySolver.registerExpression(singleSymbol);
-      }
-    }
-
-    // solve with theory solver
-    boolean isUnsolvable = prover.isUnsat();
-    if (isUnsolvable) {
-      return theorySolver.getSolutionNumber();
-    } else {
-      return -1;
-    }
-  }
-  public int solveComplete(ProverEnvironment prover) throws InterruptedException, SolverException {
+  private int enumerateSolutionsClassic(ProverEnvironment prover) throws InterruptedException, SolverException {
     BooleanFormula[][] symbols = getSymbols();
-    addConstraints(prover, symbols);
-    return solveWithTheory(new CompletePropagator(), prover, symbols);
-  }
+    // Add full Nqueens encoding
+    List<BooleanFormula> rules =
+            ImmutableList.<BooleanFormula>builder()
+                    .addAll(rowRule1(symbols))
+                    .addAll(rowRule2(symbols))
+                    .addAll(columnRule(symbols))
+                    .addAll(diagonalRule(symbols))
+                    .build();
+    prover.addConstraint(bmgr.and(rules));
 
-  public int solvePartialMin(ProverEnvironment prover) throws InterruptedException, SolverException {
-    BooleanFormula[][] symbols = getSymbols();
-    List<BooleanFormula> rules = ImmutableList.<BooleanFormula>builder()
-        .addAll(rowRule1(symbols))
-        .build();
-    prover.push(bmgr.and(rules));
-    return solveWithTheory(new PartialPropagator(symbols, bmgr), prover, symbols);
-  }
-
-  public int solvePartial(ProverEnvironment prover) throws InterruptedException, SolverException {
-    BooleanFormula[][] symbols = getSymbols();
-    addConstraints(prover, symbols);
-    return solveWithTheory(new PartialPropagator(symbols, bmgr), prover, symbols);
-  }
-
-  public int solveClassic(ProverEnvironment prover) throws InterruptedException, SolverException {
-    BooleanFormula[][] symbols = getSymbols();
-    addConstraints(prover, symbols);
-    int num = 0;
-
+    // Enumerate all solutions by iteratively adding blocking clauses
+    int numSolutions = 0;
     while (!prover.isUnsat()) {
       var assignments = prover.getModelAssignments();
       BooleanFormula modelFormula = bmgr.makeTrue();
       for (var assgn : assignments) {
         modelFormula = bmgr.and(modelFormula, assgn.getAssignmentAsFormula());
       }
-      prover.push(bmgr.not(modelFormula));
-      num++;
+      prover.addConstraint(bmgr.not(modelFormula));
+      numSolutions++;
     }
-    return num;
+    return numSolutions;
   }
 
-
-  public int solveObservantPartial(ProverEnvironment prover) throws InterruptedException,
-                                                                     SolverException {
+  private int enumerateSolutionsWithPropagator(ProverEnvironment prover) throws InterruptedException, SolverException {
     BooleanFormula[][] symbols = getSymbols();
-    addConstraints(prover, symbols);
-    this.theorySolver = new PartialObservantPropagator(bmgr);
-    prover.registerUserPropagator(theorySolver);
+    // Add full Nqueens encoding
+    List<BooleanFormula> rules =
+            ImmutableList.<BooleanFormula>builder()
+                    .addAll(rowRule1(symbols))
+                    .addAll(rowRule2(symbols))
+                    .addAll(columnRule(symbols))
+                    .addAll(diagonalRule(symbols))
+                    .build();
+    prover.addConstraint(bmgr.and(rules));
+
+    // Enumerate all solutions via a custom user propagator.
+    NQueensEnumeratingPropagator enumeratingPropagator = new NQueensEnumeratingPropagator();
+    Verify.verify(prover.registerUserPropagator(enumeratingPropagator));
     for (BooleanFormula[] symbolRow : symbols) {
-      for (BooleanFormula singleSymbol : symbolRow) {
-        theorySolver.registerExpression(singleSymbol);
+      for (BooleanFormula symbol : symbolRow) {
+        enumeratingPropagator.registerExpression(symbol);
       }
     }
 
-    // solve without theory solver
-    int num = 0;
-    while (!prover.isUnsat()) {
-      var assignments = prover.getModelAssignments();
-      BooleanFormula modelFormula = bmgr.makeTrue();
-      for (var assgn : assignments) {
-        modelFormula = bmgr.and(modelFormula, assgn.getAssignmentAsFormula());
-      }
-      prover.push(bmgr.not(modelFormula));
-      num++;
-    }
-    return num;
+    boolean isUnsat = prover.isUnsat();
+    Verify.verify(isUnsat); // The propagator should make sure that the instance becomes unsat by eventually
+    // blocking all models.
+
+    return enumeratingPropagator.getNumOfSolutions();
   }
+
+  private int enumerateSolutionsWithConstraintPropagator(ProverEnvironment prover) throws InterruptedException, SolverException {
+    BooleanFormula[][] symbols = getSymbols();
+    // Add partial Nqueens encoding (only enforce a queen per row)
+    // The remaining constraints are enforced by the user propagator
+    List<BooleanFormula> rules =
+            ImmutableList.<BooleanFormula>builder()
+                    .addAll(rowRule1(symbols))
+                    //.addAll(rowRule2(symbols))
+                    //.addAll(columnRule(symbols))
+                    //.addAll(diagonalRule(symbols))
+                    .build();
+    prover.addConstraint(bmgr.and(rules));
+
+    // Enumerate all solutions via a custom user propagator that enforces unique placement constraints.
+    NQueensConstraintPropagator constraintPropagator = new NQueensConstraintPropagator(symbols, bmgr);
+    Verify.verify(prover.registerUserPropagator(constraintPropagator));
+    for (BooleanFormula[] symbolRow : symbols) {
+      for (BooleanFormula symbol : symbolRow) {
+        constraintPropagator.registerExpression(symbol);
+      }
+    }
+
+    boolean isUnsat = prover.isUnsat();
+    Verify.verify(isUnsat); // The propagator should make sure that the instance becomes unsat by eventually
+    // blocking all models.
+
+    return constraintPropagator.getNumOfSolutions();
+  }
+
 }
